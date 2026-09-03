@@ -530,7 +530,14 @@ extension InlineArray where Element: ~Copyable {
     @lifetime(borrow self)
     @_transparent
     borrowing get {
-      let span = unsafe Span(_unsafeStart: _protectedAddress, count: count)
+      // uSwift 6.5 sync, from upstream #90002 "Collection span getters can use
+      // the unchecked initializer": `count` is a value generic, so it cannot be
+      // negative and the precondition in the `_unsafeStart` initializer is dead
+      // weight in flash.
+      let span = unsafe Span<Element>(
+        _unchecked: UnsafeRawPointer(_protectedAddress),
+        count: count
+      )
       return unsafe _overrideLifetime(span, borrowing: self)
     }
   }
@@ -541,11 +548,24 @@ extension InlineArray where Element: ~Copyable {
     @lifetime(&self)
     @_transparent
     mutating get {
-      let span = unsafe MutableSpan(
-        _unsafeStart: _protectedMutableAddress,
+      let span = unsafe MutableSpan<Element>(
+        _unchecked: UnsafeMutableRawPointer(_protectedMutableAddress),
         count: count
       )
       return unsafe _overrideLifetime(span, mutating: &self)
     }
   }
 }
+
+//===----------------------------------------------------------------------===//
+// MARK: - Raw byte conversion
+//
+// uSwift 6.5 sync: upstream added these alongside FullyInhabited.swift. They
+// make an InlineArray of fully inhabited elements usable with `bitCast(_:to:)`,
+// which is handy for wire formats and register images.
+//===----------------------------------------------------------------------===//
+
+extension InlineArray: ConvertibleToBytes
+  where Element: ConvertibleToBytes {}
+extension InlineArray: ConvertibleFromBytes
+  where Element: ConvertibleFromBytes {}

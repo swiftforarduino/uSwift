@@ -84,6 +84,25 @@ public struct Span<Element: ~Copyable>: ~Escapable, Copyable, BitwiseCopyable {
     unsafe _pointer = pointer
     _count = count
   }
+
+  /// Unsafely create a `Span` over initialized memory, without checking
+  /// anything.
+  ///
+  /// uSwift 6.5 sync: additive overload taken from upstream main, so that call
+  /// sites holding a typed pointer (InlineArray's span getters, UniqueBox) do
+  /// not have to launder it through `UnsafeRawPointer` first.
+  @unsafe
+  @_alwaysEmitIntoClient
+  @inline(__always)
+  @lifetime(borrow pointer)
+  @_disfavoredOverload
+  internal init(
+    _unchecked pointer: UnsafePointer<Element>,
+    count: Int
+  ) {
+    unsafe _pointer = UnsafeRawPointer(pointer)
+    _count = count
+  }
 }
 
 @available(SwiftCompatibilitySpan 5.0, *)
@@ -367,6 +386,35 @@ extension Span where Element: BitwiseCopyable {
   @_alwaysEmitIntoClient
   @lifetime(copy bytes)
   public init(_bytes bytes: consuming RawSpan) {
+    let rawBuffer = unsafe UnsafeRawBufferPointer(
+      start: bytes._pointer, count: bytes.byteCount
+    )
+    let span = unsafe Span(_unsafeBytes: rawBuffer)
+    // As a trivial value, 'rawBuffer' does not formally depend on the
+    // lifetime of 'bytes'. Make the dependence explicit.
+    self = unsafe _overrideLifetime(span, copying: bytes)
+  }
+}
+
+//===----------------------------------------------------------------------===//
+// uSwift 6.5 sync
+//
+// Upstream renamed `Span(_bytes:)` to `Span(viewing:)` and retyped the
+// constraint from `BitwiseCopyable` to `ConvertibleFromBytes` (see
+// FullyInhabited.swift). The old spelling is kept above so nothing in the S4A
+// libraries or user sketches breaks; this is the upstream-aligned name.
+//===----------------------------------------------------------------------===//
+
+extension Span where Element: ConvertibleFromBytes {
+
+  /// Create a `Span` viewing the bytes represented by a `RawSpan`.
+  ///
+  /// - Parameters:
+  ///   - bytes: An existing `RawSpan`, which will define both this
+  ///            `Span`'s lifetime and the memory it represents.
+  @_alwaysEmitIntoClient
+  @lifetime(copy bytes)
+  public init(viewing bytes: RawSpan) {
     let rawBuffer = unsafe UnsafeRawBufferPointer(
       start: bytes._pointer, count: bytes.byteCount
     )

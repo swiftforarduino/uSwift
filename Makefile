@@ -37,6 +37,7 @@ ALL_SWIFT_SOURCES_SHARED = CoreOperators.swift CoreAliases.swift RawRepresentabl
  Volatile-stdlib.swift TemporaryAllocation.swift\
  MutableRawSpan.swift MutableSpan.swift RawSpan.swift Span.swift\
  InlineArray.swift\
+ ByteOrder.swift FullyInhabited.swift UniqueBox.swift\
 
 # Bitset.swift
 

@@ -1,0 +1,115 @@
+uSwift 6.5 sync - update notes
+Branch: uSwift-6.5-sync (nothing committed)
+Upstream reference: swiftlang/swift origin/main @ 871a239941f (2026-08-31)
+
+
+WHAT I CHANGED
+--------------
+
+CoreOperators.swift
+    17 operator declarations fixed. They used the removed "operator designated
+    types" form (e.g. "infix operator << : BitwiseShiftPrecedence, BinaryInteger"),
+    which produced 68 parse errors and meant uSwift did not compile against a
+    current toolchain at all. Now matches upstream's Policy.swift.
+
+ByteOrder.swift (new)
+    ByteOrder enum plus .native.
+
+FullyInhabited.swift (new)
+    ConvertibleToBytes / ConvertibleFromBytes marker protocols, the
+    FullyInhabited typealias and safe bitCast(_:to:). Upstream attaches the
+    conformances in .gyb sources, so conformances for the types uSwift actually
+    has are collected at the bottom of the file instead.
+
+UniqueBox.swift (new)
+    Uniquely-owning heap box. Uses addressors instead of upstream's borrow/mutate
+    accessors, so no new experimental feature is required. Heap-allocates, so drop
+    it from the Makefile list if that is not wanted.
+
+InlineArray.swift
+    Span getters now use the unchecked Span initialisers (upstream #90002): count
+    is a value generic and cannot be negative, so the precondition was dead weight
+    in flash. Added the byte-conversion conformances.
+
+TemporaryAllocation.swift
+    Converted to typed throws throughout, and stack deallocation moved back to
+    defer. This is the most valuable functional item after the operator fix: with
+    rethrows a throwing body routes through an existential Error, and uSwift has
+    no error-box runtime.
+
+Span.swift
+    Added the typed _unchecked initialiser overload, and init(viewing:) alongside
+    the existing init(_bytes:).
+
+RawSpan.swift
+    Added safe byte subscripts, load<T: ConvertibleFromBytes>, and
+    isTriviallyIdentical(to:) alongside the existing isIdentical(to:).
+
+MutableRawSpan.swift
+    Added the safe load<T: ConvertibleFromBytes>.
+
+Makefile
+    The three new files added to ALL_SWIFT_SOURCES_SHARED. Without this they are
+    silently not built.
+
+experimental-features.txt
+    Trimmed from 19 flags to 5.
+
+VENDORED.md, SYNC-NOTES-6.5.md (new)
+    Vendoring manifest, and what was taken, skipped and verified.
+
+
+WHERE I DELIBERATELY STOPPED SHORT
+----------------------------------
+
+The Span family was not wholesale refreshed, and it is worth knowing why before
+reviewing. uSwift's copies are pre-6.3 plus deliberate local edits: message-less
+_precondition, _extracting rather than the renamed extracting, internal init(),
+rewritten availability, failable allocation. A 3-way merge gives 17 to 30
+conflicts per file whose "resolution" would mostly mean reverting those
+adaptations. Of the upstream delta, about half is doc comments and most of the
+rest is annotation churn (@export(implementation), @_originallyDefinedIn):
+Span.swift's 581 changed lines reduce to roughly 159 lines of real code change.
+
+So the additive, self-contained wins were taken and the rest is itemised in
+SYNC-NOTES-6.5.md with its dependencies:
+
+  * Builtin.gepProjection element addressing
+  * borrow / mutate accessors (needs the BorrowAndMutateAccessors feature)
+  * upstream's API removals (source-breaking for S4A libraries and sketches)
+  * MutableSpan / MutableRawSpan byte views
+  * Iterable conformances (would need BorrowingSequence.swift vendored first)
+  * _isWellAligned() on the buffer pointer types
+
+Those want a working AVR build rather than a blind hand-port. Keypaths and -O0
+codegen were left alone as instructed.
+
+
+VERIFICATION
+------------
+
+The uSwiftShims submodule was initialised, which made it possible to type-check
+the whole module with the real Makefile source list and arch defines:
+
+  * No new errors introduced, and the two CoreOperators parse errors eliminated.
+    Confirmed by stashing the branch and re-running identically for a baseline.
+  * The 8 remaining errors are "cannot find ... in scope" for C shim symbols
+    (swift_slowAlloc, float_to_int16/32/64, _byteFromProgmem, _intFromProgmem,
+    _dwordFromProgmem, _floatFromProgmem). They need the avr-libc and libgcc
+    include paths the real Makefile passes, and are present in the baseline too.
+  * Every touched file also parses standalone.
+
+Nothing was linked or run; there is no AVR toolchain on this machine.
+
+Two things worth eyeballing on a real build:
+
+  * InlineArray: ConvertibleFromBytes leans on conditional BitwiseCopyable
+    inference through Builtin.FixedArray.
+  * UniqueBox.consume() uses "discard self", which nothing else in uSwift does.
+
+
+INCIDENTAL
+----------
+
+The uSwiftShims submodule was fetched into the working tree to run that
+type-check. It can be de-initialised again if that is not wanted.

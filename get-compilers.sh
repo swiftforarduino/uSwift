@@ -36,10 +36,10 @@ function get_compiler_zip {
   fi
 }
 
-if get_compiler_zip swift-6.3 $1
+if get_compiler_zip swift-6.5 $1
 then
-  echo retrieving swift 6.3 compiler complete
+  echo retrieving swift 6.5 compiler complete
 else
-  echo retrieving swift 6.3 compiler failed
+  echo retrieving swift 6.5 compiler failed
   exit 1
 fi

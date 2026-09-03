@@ -675,3 +675,33 @@ extension MutableRawSpan {
 #endif
   }
 }
+
+//===----------------------------------------------------------------------===//
+// uSwift 6.5 sync
+//
+// Safe byte load, ported from upstream main; the checked counterpart to
+// `unsafeLoadUnaligned` above. `ConvertibleFromBytes` (see FullyInhabited.swift)
+// guarantees every bit pattern of the requested size is a valid value.
+//
+// uSwift changes: `_precondition` is called without a message.
+//===----------------------------------------------------------------------===//
+
+extension MutableRawSpan {
+
+  @_alwaysEmitIntoClient
+  internal func _checkIndex(_ position: Int) {
+    _precondition(byteOffsets.contains(position))
+  }
+
+  /// Returns a new instance of the given type, constructed from the raw memory
+  /// at the specified offset.
+  ///
+  /// - Complexity: O(1)
+  @_alwaysEmitIntoClient
+  public func load<T: ConvertibleFromBytes>(
+    fromByteOffset offset: Int,
+    as type: T.Type
+  ) -> T {
+    unsafe unsafeLoadUnaligned(fromByteOffset: offset, as: T.self)
+  }
+}

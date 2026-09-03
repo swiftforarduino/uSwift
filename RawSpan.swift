@@ -790,3 +790,75 @@ extension RawSpan {
     return unsafe _overrideLifetime(newSpan, copying: self)
   }
 }
+
+//===----------------------------------------------------------------------===//
+// uSwift 6.5 sync
+//
+// Safe byte access, ported from upstream main. These are the checked
+// counterparts to `unsafeLoad`/`unsafeLoadUnaligned` above: `ConvertibleFromBytes`
+// (see FullyInhabited.swift) guarantees that every bit pattern of the requested
+// size is a valid value, which is what makes an unchecked load safe to expose.
+//
+// uSwift changes: `_precondition` is called without a message, and
+// `isTriviallyIdentical(to:)` is added alongside uSwift's existing
+// `isIdentical(to:)` rather than replacing it (SE-0494 renamed it upstream).
+//===----------------------------------------------------------------------===//
+
+extension RawSpan {
+
+  @_alwaysEmitIntoClient
+  internal func _checkIndex(_ position: Int) {
+    _precondition(byteOffsets.contains(position))
+  }
+
+  /// The byte at `byteOffset`.
+  ///
+  /// - Precondition: `byteOffset` must be a valid offset into this span.
+  ///
+  /// - Complexity: O(1)
+  @_alwaysEmitIntoClient
+  public subscript(_ byteOffset: Int) -> UInt8 {
+    _checkIndex(byteOffset)
+    return unsafe self[unchecked: byteOffset]
+  }
+
+  /// The byte at `byteOffset`, without bounds checking.
+  ///
+  /// - Precondition: `byteOffset` must be a valid offset into this span.
+  ///
+  /// - Complexity: O(1)
+  @unsafe
+  @_alwaysEmitIntoClient
+  public subscript(unchecked byteOffset: Int) -> UInt8 {
+    unsafe unsafeLoad(fromUncheckedByteOffset: byteOffset, as: UInt8.self)
+  }
+
+  /// Returns a new instance of the given type, constructed from the raw memory
+  /// at the specified offset.
+  ///
+  /// Unlike `unsafeLoadUnaligned`, this is safe: `T` being
+  /// `ConvertibleFromBytes` means every bit pattern is a valid `T` and its
+  /// layout has no padding, so no alignment or validity precondition is needed
+  /// beyond the bounds check inherited from the caller's offset.
+  ///
+  /// - Complexity: O(1)
+  @_alwaysEmitIntoClient
+  public func load<T: ConvertibleFromBytes>(
+    fromByteOffset offset: Int,
+    as type: T.Type
+  ) -> T {
+    unsafe unsafeLoadUnaligned(fromByteOffset: offset, as: T.self)
+  }
+
+  /// Returns a boolean value indicating whether two `RawSpan` instances
+  /// refer to the same region of memory.
+  ///
+  /// This is the SE-0494 spelling of uSwift's existing `isIdentical(to:)`,
+  /// which is kept for source compatibility.
+  ///
+  /// - Complexity: O(1)
+  @_alwaysEmitIntoClient
+  public func isTriviallyIdentical(to other: Self) -> Bool {
+    unsafe (self._pointer == other._pointer) && (self._count == other._count)
+  }
+}

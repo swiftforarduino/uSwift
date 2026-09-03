@@ -37,7 +37,7 @@ jobs:
       S4A_WORKSPACE: ${{ github.workspace }}/workspace/${{ matrix.arch }}/S4A-install
       ARCH: ${{ matrix.arch }}
       SWIFT_COMPILER_DIR: ${{ github.workspace }}/compilers/swift
-      COMPILERS: ${{ secrets.COMPILERS }}
+      COMPILERS: https://swiftforarduino.com/compilers.php?compilers=1&email=compilers%40swiftforarduino.com&
 
     steps:
 

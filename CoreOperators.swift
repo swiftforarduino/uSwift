@@ -94,29 +94,29 @@ infix operator   ^= : AssignmentPrecedence
 infix operator   |= : AssignmentPrecedence
 
 // FIXME: is this the right precedence level for "..." ?
-infix operator  ... : RangeFormationPrecedence, Comparable
-infix operator  ..< : RangeFormationPrecedence, Comparable
+infix operator  ... : RangeFormationPrecedence
+infix operator  ..< : RangeFormationPrecedence
 
-infix operator  << : BitwiseShiftPrecedence, BinaryInteger
-infix operator &<< : BitwiseShiftPrecedence, FixedWidthInteger
-infix operator  >> : BitwiseShiftPrecedence, BinaryInteger
-infix operator &>> : BitwiseShiftPrecedence, FixedWidthInteger
+infix operator  << : BitwiseShiftPrecedence
+infix operator &<< : BitwiseShiftPrecedence
+infix operator  >> : BitwiseShiftPrecedence
+infix operator &>> : BitwiseShiftPrecedence
 
 // "Multiplicative"
 
-infix operator   * : MultiplicationPrecedence, Numeric
-infix operator  &* : MultiplicationPrecedence, FixedWidthInteger
-infix operator   / : MultiplicationPrecedence, BinaryInteger, FloatingPoint
-infix operator   % : MultiplicationPrecedence, BinaryInteger
-infix operator   & : MultiplicationPrecedence, BinaryInteger
+infix operator   * : MultiplicationPrecedence
+infix operator  &* : MultiplicationPrecedence
+infix operator   / : MultiplicationPrecedence
+infix operator   % : MultiplicationPrecedence
+infix operator   & : MultiplicationPrecedence
 
 // "Additive"
 
-infix operator   + : AdditionPrecedence, AdditiveArithmetic
-infix operator  &+ : AdditionPrecedence, FixedWidthInteger
-infix operator   - : AdditionPrecedence, AdditiveArithmetic
-infix operator  &- : AdditionPrecedence, FixedWidthInteger
-infix operator   | : AdditionPrecedence, BinaryInteger
-infix operator   ^ : AdditionPrecedence, BinaryInteger
+infix operator   + : AdditionPrecedence
+infix operator  &+ : AdditionPrecedence
+infix operator   - : AdditionPrecedence
+infix operator  &- : AdditionPrecedence
+infix operator   | : AdditionPrecedence
+infix operator   ^ : AdditionPrecedence
 
 infix operator ?? : NilCoalescingPrecedence
