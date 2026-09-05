@@ -7,3 +7,9 @@
 [submodule "gpl-tools-arm"]
 	path = gpl-tools-arm
 	url = git@github.com:swiftforarduino/gpl-tools-arm.git
+[submodule "ide-support-arm"]
+	path = ide-support-arm
+	url = git@github.com:swiftforarduino/ide-support-arm.git
+[submodule "arm-cmsis"]
+	path = arm-cmsis
+	url = git@github.com:swiftforarduino/arm-cmsis.git

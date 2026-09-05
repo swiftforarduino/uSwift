@@ -88,7 +88,6 @@ S4A_DEPLOYMENT_AVR_RESOURCES_DIR = $(S4A_DEPLOYMENT_DIR)/SwiftForArduino/AVR-res
 
 USWIFT_ARCH_BINARY_REPOSITORY_STAGING_CHECKOUT_PATH = $(S4A_DEPLOYMENT_DIR)/BuildEngine/uSwift-$(ARCH)
 USWIFT_ARCH_BINARY_SUBMODULE = uSwift-$(ARCH)
-# USWIFT_ARCH_BINARY_REPOSITORY_URL = git@github.com:swiftforarduino/uSwift-$(ARCH).git
 
 ifneq ($(USWIFT_VARIANT_SUBDIR),)
 USWIFT_ARCH_BIN_PATH = bin/$(ARCH)-$(USWIFT_VARIANT_SUBDIR)
@@ -135,25 +134,16 @@ ifeq ($(INCLUDE_PRINTF_FLT),yes)
 endif
 LD_FLOATING_POINT_PRINT_OPTS ?= 
 
-# Fallback AVR.zip for extracting libCAVR.a if we don't have avr-gcc to build it locally...
-
-AVR_EMBEDDED_ZIP_FALLBACK_DIR = $(S4A_AVR_RESOURCES_DIR)
-AVR_EMBEDDED_ZIP_FALLBACK_FILE = AVR-Embedded.zip
-AVR_EMBEDDED_ZIP_FALLBACK_UNZIPPED_SUBDIR = AVR-Embedded
-
-
 # ARM
 # once 5.0 is out and stable, maybe we can reference arm tools in the bundle instead
 mkfile_path := $(abspath $(lastword $(MAKEFILE_LIST)))
 current_dir := $(notdir $(patsubst %/,%,$(dir $(mkfile_path))))
-# This is a relative path to the S4A source directory and is not portable, override it with the correct value
-S4A_SOURCE_CODE_DIR ?= $(HOME)/Documents/Code/S4A
 
-ARM_ATSAMD21A_DFP_DIR = $(S4A_SOURCE_CODE_DIR)/BuildEngine/ide-support-arm/ATSAMD21-DFP/samd21a
+ARM_ATSAMD21A_DFP_DIR = $(GITHUB_WORKSPACE)/ide-support-arm/ATSAMD21-DFP/samd21a
 ARM_ATSAMD21A_DFP_INCLUDE_DIR = $(ARM_ATSAMD21A_DFP_DIR)/include
 
 # currently we don't have CMSIS downloaded, needs getting from Atmel
-ARM_CMSIS_INCLUDE_DIR = $(HOME)/Downloads/ARM.CMSIS.5.7.0/CMSIS/Core/Include
+ARM_CMSIS_INCLUDE_DIR = $(GITHUB_WORKSPACE)/arm-cmsis/Core/Include
 
 ATMEL_GNU_ARM_TOOLCHAIN = $(GITHUB_WORKSPACE)/gpl-tools-arm
 ATMEL_GNU_ARM_TOOLCHAIN_BIN = $(ATMEL_GNU_ARM_TOOLCHAIN)/bin/
@@ -180,28 +170,12 @@ ARM_RUNTIME_OBJECTS = $(ARM_RUNTIME_DIR)/startup_samd21g18a.o $(ARM_RUNTIME_DIR)
 # tools
 SWIFT_FOR_ARDUINO_APP ?= /Applications/S4A IDE Pro.app
 SWIFT_FOR_ARDUINO_BUILD_ENGINE ?= $(SWIFT_FOR_ARDUINO_APP)/Contents/XPCServices/BuildEngine.xpc/Contents
-SWIFT_FOR_ARDUINO_UNSAFE_SAMPLE_MODULES ?= "$(SWIFT_FOR_ARDUINO_APP)/Contents/Resources/SampleLibraries/unsafe_modules"
 
 # This is only until we have the tools in a neat form in the IDE bundle
-LINK_LIBRARIES_DIR = $(SWIFT_FOR_ARDUINO_BUILD_ENGINE)/Resources/lib
+LINK_LIBRARIES_DIR = $(GITHUB_WORKSPACE)/gpl-tools-avr/lib
 LINK_TOOLS_DIR ?= $(SWIFT_FOR_ARDUINO_BUILD_ENGINE)/MacOS
 LINK_TOOLS_BETA_DIR ?= $(SWIFT_FOR_ARDUINO_BUILD_ENGINE)/MacOS
 SIMAVR ?= $(LINK_TOOLS_BETA_DIR)/simavr
-
-TEMPORARY_AR_OVERRIDE_DIR = $(HOME)/Downloads
-TEMPORARY_LLC_OVERRIDE_DIR = $(HOME)/Downloads
-
-# for "installing" either AVR/ARM or uSwift into the S4A source code project
-S4A_ROOT_DIRECTORY ?= $(HOME)/Documents/Code/S4A
-S4A_BUILD_ENGINE_USWIFT_DIR = $(S4A_ROOT_DIRECTORY)/BuildEngine/uSwift-$(ARCH)/Embedded
-S4A_BUILD_ENGINE_USWIFT_SHIMS_DIR = $(S4A_ROOT_DIRECTORY)/BuildEngine/uSwiftShims
-S4A_AVR_RESOURCES_DIR = $(S4A_ROOT_DIRECTORY)/SwiftForArduino/AVR-resources
-S4A_ARM_RESOURCES_DIR = $(S4A_ROOT_DIRECTORY)/SwiftForArduino/ARM-resources
-
-# S4A_BUILD_ENGINE_AVR_DIR = $(S4A_ROOT_DIRECTORY)/BuildEngine/large-binaries/AVR
-# S4A_BUILD_ENGINE_ARM_DIR = $(S4A_ROOT_DIRECTORY)/BuildEngine/large-binaries/ARM
-# S4A_DOCUMENTATION_DIR = $(S4A_ROOT_DIRECTORY)/SwiftForArduino
-
 
 GCC_OPTS ?= $(ARCH_GCC_OPTS) $(ARCH_INCLUDES) $(ARCH_SYSTEM_INCLUDES) $(ARCH_C_DEFINES) -std=c99 -ffunction-sections -O3 $(GCC_DEBUG_OPTS) -I.
 GCC_PLUS_OPTS ?= $(ARCH_GCC_OPTS) $(ARCH_INCLUDES) $(ARCH_SYSTEM_INCLUDES) $(ARCH_C_DEFINES) -std=c++11 -ffunction-sections -O3 $(GCC_DEBUG_OPTS) -I.
@@ -230,11 +204,7 @@ SED = sed # use the native mac sed, it's fine for now, it's a BSD one but compat
 # until we have upgraded the full toolchain in the IDE to use lld, compiler-rt and libcxx and eliminated all
 # gnu components from the build itself
 
-# First setup the directory variables...
-# SWIFT_DIR ?= $(SWIFT_FOR_ARDUINO_BUILD_ENGINE)/swift
-# SWIFT_DIR ?= $(HOME)/built/swift-experimental
 SWIFT_DIR = $(SWIFT_COMPILER_DIR)
-# SWIFT_DIR ?= $(HOME)/Documents/Code/swift/build/Ninja-ReleaseAssert/swift-macosx-x86_64/bin
 
 # the directory for llc...
 LLVM_TOOLS_DIR ?= $(SWIFT_FOR_ARDUINO_BUILD_ENGINE)/MacOS

@@ -11,6 +11,10 @@ on:
         type: boolean
         description: Update the binary repos uSwift-AVR and uSwift-ARM automatically.
         default: false
+      clean:
+        type: boolean
+        description: Clean before build.
+        default: false
 
   push:
     branches:
@@ -55,6 +59,7 @@ jobs:
         fi
 
     - name: Clean
+      if: inputs.updateBinaryRepo
       run: rm -rf workspace bin deploy
 
     - uses: actions/checkout@v3
