@@ -1,3 +1,9 @@
 [submodule "uSwiftShims"]
 	path = uSwiftShims
 	url = https://github.com/swiftforarduino/uSwiftShims
+[submodule "gpl-tools-avr"]
+	path = gpl-tools-avr
+	url = git@github.com:swiftforarduino/gpl-tools-avr.git
+[submodule "gpl-tools-arm"]
+	path = gpl-tools-arm
+	url = git@github.com:swiftforarduino/gpl-tools-arm.git
