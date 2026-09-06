@@ -31,13 +31,15 @@ function get_compiler_zip {
     echo "  Local copy exists; checking whether it has changed..."
     CURL_TIME="-z ${LOCAL_ZIP}"
   else
+    echo "  No local copy exists at ${LOCAL_ZIP}"
     CURL_TIME=""
   fi
 
-  if curl -Ljb cookies.txt $CURL_TIME "${COMPILERS}${REQUEST}" -o "${1}.zip"
+  if curl -R -Ljb cookies.txt $CURL_TIME "${COMPILERS}${REQUEST}" -o "${1}.zip"
   then
     if [ -s "${1}.zip" ] && unzip "${1}.zip"
     then
+      echo "  Unzipping files..."
       popd
       rm -rf "$2" 2> /dev/null
       mkdir -p "$2"

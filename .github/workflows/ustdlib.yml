@@ -13,7 +13,7 @@ on:
         default: false
       clean:
         type: boolean
-        description: Clean before build.
+        description: Clean out workspace, tree and cached compilers before build.
         default: false
 
   push:
@@ -38,9 +38,9 @@ jobs:
         arch: ['AVR','ARM']
 
     env:
-      S4A_WORKSPACE: ${{ github.workspace }}/workspace/${{ matrix.arch }}/S4A-install
+      S4A_WORKSPACE: ${{ github.workspace }}/../workspace/${{ matrix.arch }}/S4A-install
       ARCH: ${{ matrix.arch }}
-      SWIFT_COMPILER_DIR: ${{ github.workspace }}/compilers/swift
+      SWIFT_COMPILER_DIR: ${{ github.workspace }}/../compilers/swift
       COMPILERS: https://swiftforarduino.com/compilers.php?compilers=1&email=compilers%40swiftforarduino.com&
 
     steps:
