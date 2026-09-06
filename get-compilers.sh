@@ -1,61 +1,46 @@
 #! /bin/bash -x
-# This used to use ssh to get large repositories from git using ssh.
-# Which was too complicated and unreliable. Now we are directly downloading
-# a zip file of each tool from the website.
-
-
-if ! STAGING="$(mktemp -d compilersXXX)"
-then
-  echo Failed to make staging directory
-  exit 1
-fi
-
-function cleanup_staging {
-  rm -rf "$STAGING" 2> /dev/null
-}
-
-trap cleanup_staging EXIT
-
 function get_compiler_zip {
 
   echo "Downloading ${1}..."
 
-  pushd "$STAGING"
-  rm -rf * 2> /dev/null
+  mkdir -p "$2"
 
+  ZIP="${2}/${1}.zip"
   REQUEST="requested_filename=${1}.zip"
-  LOCAL_ZIP="${2}/${1}.zip"
 
-  if [ -f "$LOCAL_ZIP" ]
+  if [ -f "$ZIP" ]
   then
-    echo "  Local copy exists; checking whether it has changed..."
-    CURL_TIME="-z ${LOCAL_ZIP}"
+    # Remember the modification time before curl.
+    MTIME_BEFORE=$(stat -f %m "$ZIP")
+    CURL_TIME="-z $ZIP"
   else
-    echo "  No local copy exists at ${LOCAL_ZIP}"
+    MTIME_BEFORE=""
     CURL_TIME=""
   fi
 
-  if curl -R -Ljb cookies.txt $CURL_TIME "${COMPILERS}${REQUEST}" -o "${1}.zip"
+  HTTP_CODE=$(curl -R -Ljb cookies.txt \
+    $CURL_TIME \
+    "${COMPILERS}${REQUEST}" \
+    -o "$ZIP" \
+    -w '%{http_code}')
+  CURL_STATUS=$?
+
+  echo "  HTTP status: ${HTTP_CODE}"
+
+  if [ $CURL_STATUS -ne 0 ]
   then
-    if [ -s "${1}.zip" ] && unzip "${1}.zip"
-    then
-      echo "  Unzipping files..."
-      popd
-      rm -rf "$2" 2> /dev/null
-      mkdir -p "$2"
-      cp -a "${STAGING}/${1}"/* "$2"/
-    elif [ -f "$LOCAL_ZIP" ]
-    then
-      echo "  Server says local copy is up to date."
-      popd
-    else
-      echo "  Download failed."
-      popd
-      exit 99
-    fi
-  else
-    popd
+    echo "  Download failed (curl status ${CURL_STATUS})."
     exit 99
+  fi
+
+  MTIME_AFTER=$(stat -f %m "$ZIP")
+
+  if [ "$MTIME_BEFORE" != "$MTIME_AFTER" ]
+  then
+    echo "  New file downloaded; extracting..."
+    unzip -o "$ZIP" || exit 99
+  else
+    echo "  Local file unchanged; no extraction required."
   fi
 }
 
@@ -66,4 +51,3 @@ else
   echo retrieving swift 6.5 compiler failed
   exit 1
 fi
-
