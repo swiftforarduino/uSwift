@@ -30,7 +30,7 @@ env:
 
 jobs:
   build-uswift:
-    runs-on: [self-hosted, macOS, avrgcc]
+    runs-on: [self-hosted, macOS]
 
     strategy:
       matrix:
@@ -42,6 +42,10 @@ jobs:
       ARCH: ${{ matrix.arch }}
       SWIFT_COMPILER_DIR: ${{ github.workspace }}/../compilers/swift
       COMPILERS: https://swiftforarduino.com/compilers.php?compilers=1&email=compilers%40swiftforarduino.com&
+
+    outputs:
+      avr_sha: ${{ steps.update-binary-repo.outputs.avr_sha }}
+      arm_sha: ${{ steps.update-binary-repo.outputs.arm_sha }}
 
     steps:
 
@@ -92,4 +96,67 @@ jobs:
 
     - name: Update Binary Repo
       if: inputs.updateBinaryRepo
-      run: /usr/bin/make update-github-binaries
+      run: |
+        output=$(/usr/bin/make update-github-binaries)
+        echo "$output"
+        line=$(echo "$output" | grep 'USWIFT_BINARY_SHA=')
+        sha=${line#*USWIFT_BINARY_SHA=}
+        if [ "${{ matrix.arch }}" = "AVR" ]; then
+          echo "avr_sha=$sha" >> "$GITHUB_OUTPUT"
+        else
+          echo "arm_sha=$sha" >> "$GITHUB_OUTPUT"
+        fi
+
+  s4a-deploy:
+    name: Update S4A repository
+    needs: build-uswift
+    if: inputs.updateBinaryRepo
+    runs-on: [self-hosted, macOS]
+
+    env:
+      AVR_SHA: ${{ needs.build-uswift.outputs.avr_sha }}
+      ARM_SHA: ${{ needs.build-uswift.outputs.arm_sha }}
+
+    steps:
+      - name: Checkout S4A
+        uses: actions/checkout@v4
+        with:
+          repository: swiftforarduino/S4A
+          fetch-depth: 0
+          submodules: false
+
+      - name: Create update branch
+        run: |
+          branch="update-uswift-$(date +%s)"
+          git switch -c "$branch"
+          echo "branch=$branch" >> "$GITHUB_ENV"
+
+      - name: Update submodule pointers
+        run: |
+          echo "AVR binary commit sha id: $AVR_SHA"
+          echo "ARM binary commit sha id: $ARM_SHA"
+
+          git update-index --cacheinfo 160000,$AVR_SHA,BuildEngine/uSwift-AVR
+          git update-index --cacheinfo 160000,$ARM_SHA,BuildEngine/uSwift-ARM
+
+          echo
+          echo "Changes:"
+          git diff --cached --submodule=short
+
+      - name: Commit changes
+        run: |
+          git add BuildEngine/uSwift-AVR BuildEngine/uSwift-ARM
+
+          if git diff --cached --quiet; then
+            echo "No submodule changes."
+            exit 0
+          fi
+
+          git commit \
+            -m "Update uSwift binary repositories" \
+            -m "uSwift-AVR: $AVR_SHA" \
+            -m "uSwift-ARM: $ARM_SHA"
+
+      - name: Push update branch
+        run: |
+          git push --set-upstream origin "$branch"
