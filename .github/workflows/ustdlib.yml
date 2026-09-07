@@ -30,7 +30,7 @@ env:
 
 jobs:
   build-uswift:
-    runs-on: [self-hosted, macOS]
+    runs-on: [self-hosted, macOS, avrgcc]
 
     strategy:
       matrix:
