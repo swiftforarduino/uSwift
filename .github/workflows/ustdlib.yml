@@ -63,8 +63,8 @@ jobs:
         fi
 
     - name: Clean
-      if: inputs.updateBinaryRepo
-      run: rm -rf workspace bin deploy
+      if: inputs.clean
+      run: rm -rf workspace bin deploy ../compilers
 
     - uses: actions/checkout@v3
       with:

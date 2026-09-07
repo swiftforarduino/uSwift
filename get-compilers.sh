@@ -38,7 +38,11 @@ function get_compiler_zip {
   if [ "$MTIME_BEFORE" != "$MTIME_AFTER" ]
   then
     echo "  New file downloaded; extracting..."
-    unzip -o "$ZIP" || exit 99
+    pushd "$2"
+    unzip -o "${1}.zip" || exit 99
+    cp -a "${1}"/* ./
+    rm -rf "${1}"
+
   else
     echo "  Local file unchanged; no extraction required."
   fi
