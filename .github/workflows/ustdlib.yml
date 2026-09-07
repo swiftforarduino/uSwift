@@ -116,37 +116,52 @@ jobs:
     env:
       AVR_SHA: ${{ needs.build-uswift.outputs.avr_sha }}
       ARM_SHA: ${{ needs.build-uswift.outputs.arm_sha }}
+      S4A_DIR: ${{ github.workspace }}/workspace/s4a-deploy
 
     steps:
-      - name: Checkout S4A
-        uses: actions/checkout@v4
-        with:
-          repository: swiftforarduino/S4A
-          fetch-depth: 0
-          submodules: false
+      - name: Clone S4A
+        run: |
+          rm -rf "$S4A_DIR"
+
+          git clone \
+            --filter=blob:none \
+            --depth=1 \
+            --no-checkout \
+            git@github.com:swiftforarduino/S4A.git \
+            "$S4A_DIR"
 
       - name: Create update branch
+        working-directory: ${{ env.S4A_DIR }}
         run: |
+          cd "$S4A_DIR"
+
           branch="update-uswift-$(date +%s)"
           git switch -c "$branch"
+
           echo "branch=$branch" >> "$GITHUB_ENV"
 
       - name: Update submodule pointers
+        working-directory: ${{ env.S4A_DIR }}
         run: |
+          # Populate the index from HEAD without checking out the files.
+          git read-tree HEAD
+
           echo "AVR binary commit sha id: $AVR_SHA"
           echo "ARM binary commit sha id: $ARM_SHA"
 
-          git update-index --cacheinfo 160000,$AVR_SHA,BuildEngine/uSwift-AVR
-          git update-index --cacheinfo 160000,$ARM_SHA,BuildEngine/uSwift-ARM
+          git update-index \
+            --cacheinfo 160000,$AVR_SHA,BuildEngine/uSwift-AVR
+
+          git update-index \
+            --cacheinfo 160000,$ARM_SHA,BuildEngine/uSwift-ARM
 
           echo
           echo "Changes:"
           git diff --cached --submodule=short
 
       - name: Commit changes
+        working-directory: ${{ env.S4A_DIR }}
         run: |
-          git add BuildEngine/uSwift-AVR BuildEngine/uSwift-ARM
-
           if git diff --cached --quiet; then
             echo "No submodule changes."
             exit 0
@@ -158,5 +173,11 @@ jobs:
             -m "uSwift-ARM: $ARM_SHA"
 
       - name: Push update branch
+        working-directory: ${{ env.S4A_DIR }}
         run: |
           git push --set-upstream origin "$branch"
+
+      - name: Remove S4A clone
+        if: always()
+        run: |
+          rm -rf "$S4A_DIR"
