@@ -111,7 +111,7 @@ jobs:
     name: Update S4A repository
     needs: build-uswift
     if: inputs.updateBinaryRepo
-    runs-on: [self-hosted, macOS]
+    runs-on: [self-hosted, macOS, avrgcc]
 
     env:
       S4A_DIR: ${{ github.workspace }}/workspace/s4a-deploy
