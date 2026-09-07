@@ -43,10 +43,6 @@ jobs:
       SWIFT_COMPILER_DIR: ${{ github.workspace }}/../compilers/swift
       COMPILERS: https://swiftforarduino.com/compilers.php?compilers=1&email=compilers%40swiftforarduino.com&
 
-    outputs:
-      avr_sha: ${{ steps.update-binary-repo.outputs.avr_sha }}
-      arm_sha: ${{ steps.update-binary-repo.outputs.arm_sha }}
-
     steps:
 
     - name: Set Environment Variables
@@ -100,12 +96,16 @@ jobs:
         output=$(/usr/bin/make update-github-binaries)
         echo "$output"
         line=$(echo "$output" | grep 'USWIFT_BINARY_SHA=')
-        sha=${line#*USWIFT_BINARY_SHA=}
-        if [ "${{ matrix.arch }}" = "AVR" ]; then
-          echo "avr_sha=$sha" >> "$GITHUB_OUTPUT"
-        else
-          echo "arm_sha=$sha" >> "$GITHUB_OUTPUT"
-        fi
+        echo "$sha" > "uswift-${{ matrix.arch }}.sha"
+        echo "USWIFT_BINARY_SHA=$sha"
+        echo "sha=$sha" >> "$GITHUB_OUTPUT"
+
+    - name: Upload binary repo SHA
+      if: inputs.updateBinaryRepo
+      uses: actions/upload-artifact@v4
+      with:
+        name: uswift-${{ matrix.arch }}-sha
+        path: uswift-${{ matrix.arch }}.sha
 
   s4a-deploy:
     name: Update S4A repository
@@ -114,11 +114,21 @@ jobs:
     runs-on: [self-hosted, macOS]
 
     env:
-      AVR_SHA: ${{ needs.build-uswift.outputs.avr_sha }}
-      ARM_SHA: ${{ needs.build-uswift.outputs.arm_sha }}
       S4A_DIR: ${{ github.workspace }}/workspace/s4a-deploy
 
     steps:
+      - name: Download binary repo SHAs
+        uses: actions/download-artifact@v4
+        with:
+          pattern: uswift-*-sha
+          path: ${{ github.workspace }}/workspace/shas
+          merge-multiple: true
+
+      - name: Read binary repo SHAs
+        run: |
+          echo "AVR_SHA=$(cat "${{ github.workspace }}/workspace/shas/uswift-AVR.sha")" >> "$GITHUB_ENV"
+          echo "ARM_SHA=$(cat "${{ github.workspace }}/workspace/shas/uswift-ARM.sha")" >> "$GITHUB_ENV"
+
       - name: Clone S4A
         run: |
           rm -rf "$S4A_DIR"
