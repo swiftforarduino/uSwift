@@ -71,8 +71,6 @@ jobs:
         git submodule init
         git submodule update --remote --recursive
 
-    # It's slow and inefficient downloading the compiler every time.
-    # We can upgrade it to some system that detects if it needs to update or not (rsync?)
     - name: Download Swift Compiler
       run: |
         ./get-compilers.sh ${SWIFT_COMPILER_DIR}
@@ -96,6 +94,7 @@ jobs:
         output=$(/usr/bin/make update-github-binaries)
         echo "$output"
         line=$(echo "$output" | grep 'USWIFT_BINARY_SHA=')
+        sha=${line#*USWIFT_BINARY_SHA=}
         echo "$sha" > "uswift-${{ matrix.arch }}.sha"
         echo "USWIFT_BINARY_SHA=$sha"
         echo "sha=$sha" >> "$GITHUB_OUTPUT"
